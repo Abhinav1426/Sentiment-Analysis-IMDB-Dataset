@@ -93,6 +93,7 @@ bert_model = Bert_Model(data_processor.data_loader)
 bert_model.train_model()
 ```
 
+
 ### Running the API Server
 1. Start the Flask server:
    ```bash
@@ -150,24 +151,24 @@ visualizer.wordcloud_negative()
 ## 1. Sentiment Distribution
 The distribution of sentiment labels across the dataset.
 
-![Sentiment Distribution](files/Distribution of Positive and Negative Reviews.png)
+![Sentiment Distribution](files/Distribution.png)
 
 ## 2. Word Clouds
 
 ### Positive Reviews Word Cloud
 Most frequent words in positive movie reviews.
 
-![Positive Word Cloud](files/Positive Review Text.png)
+![Positive Word Cloud](files/Positive_Review.png)
 
 ### Negative Reviews Word Cloud
 Most frequent words in negative movie reviews.
 
-![Negative Word Cloud](files/Negative Review Text.png)
+![Negative Word Cloud](files/Negative_Review.png)
 
 ## 3. Most Common Words (Unigrams)
 Top words used across all reviews.
 
-![Unigram Analysis](files/Common Words in Reviews.png)
+![Unigram Analysis](files/Common_Words_in_Reviews.png)
 
 
 # Model Performance
@@ -194,5 +195,134 @@ Metrics are saved in `models/lstm/metrics.json` and `models/bert/metrics.json`.
 - F1 Score: 84.18%
 
 ![LSTM Training Progress](files/lstm_metrics.png)
+
+## Data Process and Training Logs
+   ```Text
+      Data loaded successfully!
+      
+      First few rows of the dataset:
+                                                    review sentiment
+      0  One of the other reviewers has mentioned that ...  positive
+      1  A wonderful little production. <br /><br />The...  positive
+      2  I thought this was a wonderful way to spend ti...  positive
+      3  Basically there's a family where a little boy ...  negative
+      4  Petter Mattei's "Love in the Time of Money" is...  positive
+      
+      Dataset info:
+      <class 'pandas.core.frame.DataFrame'>
+      RangeIndex: 50000 entries, 0 to 49999
+      Data columns (total 2 columns):
+       #   Column     Non-Null Count  Dtype
+      ---  ------     --------------  -----
+       0   review     50000 non-null  object
+       1   sentiment  50000 non-null  object
+      dtypes: object(2)
+      memory usage: 781.4+ KB
+      None
+      
+      Describe the dataset:
+                                                         review sentiment
+      count                                               50000     50000
+      unique                                              49582         2
+      top     Loved today'  s show!!! It was a variety and not...  positive
+      freq                                                    5     25000
+      
+      Checking for the missing values:
+      review       0
+      sentiment    0
+      dtype: int64
+      Processing reviews:   0%|          | 0/50000 [00:00<?, ?it/s]Labels converted to binary.
+      Processing reviews: 100%|██████████| 50000/50000 [01:33<00:00, 532.62it/s]
+      Reviews preprocessed.
+      Initialized BERT model class
+      Starting BERT model training
+      Using device: cuda
+      Loading data splits...
+      Data splits loaded successfully
+      BERT tokenizer loaded
+      Tokenizing 35000 texts
+      Tokenizing: 100%|██████████| 35000/35000 [00:40<00:00, 868.06it/s]
+      Tokenization completed
+      Tokenizing 7500 texts
+      Tokenizing: 100%|██████████| 7500/7500 [00:08<00:00, 864.12it/s]
+      Tokenization completed
+      Tokenizing 7500 texts
+      Tokenizing: 100%|██████████| 7500/7500 [00:08<00:00, 858.62it/s]
+      Tokenization completed
+      DataLoaders created successfully
+      Loading BERT model...
+      BERT model loaded successfully
+      Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight']
+      You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+      Training:   0%|          | 0/2187 [00:00<?, ?it/s]Starting fine-tuning for 3 epochs
+      Starting epoch 1/3
+      Training: 100%|██████████| 2187/2187 [05:26<00:00,  6.70it/s]
+      Validation:   0%|          | 0/469 [00:00<?, ?it/s]Average training loss: 0.3974
+      Validation: 100%|██████████| 469/469 [00:21<00:00, 21.35it/s]
+      Validation Accuracy: 0.8625
+      Training:   0%|          | 0/2187 [00:00<?, ?it/s]New best model saved with accuracy: 0.8625
+      Starting epoch 2/3
+      Training: 100%|██████████| 2187/2187 [05:10<00:00,  7.05it/s]
+      Average training loss: 0.2697
+      Validation: 100%|██████████| 469/469 [00:21<00:00, 21.74it/s]
+      Training:   0%|          | 0/2187 [00:00<?, ?it/s]Validation Accuracy: 0.8555
+      Starting epoch 3/3
+      Training: 100%|██████████| 2187/2187 [05:08<00:00,  7.10it/s]
+      Average training loss: 0.1969
+      Validation: 100%|██████████| 469/469 [00:20<00:00, 22.36it/s]
+      Validation Accuracy: 0.8700
+      New best model saved with accuracy: 0.8700
+      Testing:   0%|          | 0/469 [00:00<?, ?it/s]Tokenizer saved successfully
+      Starting model evaluation
+      Testing: 100%|██████████| 469/469 [00:20<00:00, 22.50it/s]
+      Evaluation completed
+      Calculating metrics
+      Test Metrics: {'accuracy': 0.8714666666666666, 'precision': 0.8698738170347003, 'recall': 0.8758602435150874, 'f1_score': 0.8728567660247956}
+      Training completed successfully
+      Initialized LSTM model class
+      Starting LSTM model training
+      Using device: cuda
+      Data splits loaded successfully
+      Tokenizer built
+      Tokenizing 35000 texts
+      Tokenizing: 100%|██████████| 35000/35000 [00:00<00:00, 38676.85it/s]
+      Tokenization completed
+      Tokenizing 7500 texts
+      Tokenizing: 100%|██████████| 7500/7500 [00:00<00:00, 42613.72it/s]
+      Tokenizing:   0%|          | 0/7500 [00:00<?, ?it/s]Tokenization completed
+      Tokenizing 7500 texts
+      Tokenizing: 100%|██████████| 7500/7500 [00:00<00:00, 43103.44it/s]
+      Tokenization completed
+      DataLoaders created successfully
+      Loading LSTM model...
+      LSTM model loaded successfully
+      Starting fine-tuning for 3 epochs
+      Starting epoch 1/3
+      Training: 100%|██████████| 2187/2187 [00:16<00:00, 128.65it/s]
+      Validation:   0%|          | 0/469 [00:00<?, ?it/s]Average training loss: 0.6714
+      Validation: 100%|██████████| 469/469 [00:04<00:00, 103.80it/s]
+      Validation Accuracy: 0.7037
+      New best model saved with accuracy: 0.7037
+      Starting epoch 2/3
+      Training: 100%|██████████| 2187/2187 [00:17<00:00, 127.86it/s]
+      Average training loss: 0.5065
+      Validation: 100%|██████████| 469/469 [00:04<00:00, 102.89it/s]
+      Validation Accuracy: 0.8051
+      New best model saved with accuracy: 0.8051
+      Starting epoch 3/3
+      Training: 100%|██████████| 2187/2187 [00:17<00:00, 127.25it/s]
+      Average training loss: 0.3522
+      Validation: 100%|██████████| 469/469 [00:04<00:00, 101.94it/s]
+      Validation Accuracy: 0.8431
+      New best model saved with accuracy: 0.8431
+      Testing:   0%|          | 0/469 [00:00<?, ?it/s]Starting model evaluation
+      Testing: 100%|██████████| 469/469 [00:04<00:00, 103.90it/s]
+      Evaluation completed
+      Calculating metrics
+      Test Metrics: {'accuracy': 0.8425333333333334, 'precision': 0.8519924098671727, 'recall': 0.831921651667549, 'f1_score': 0.841837417972412}
+      Training completed successfully
+      
+      Process finished with exit code 0
+   ```
 
 

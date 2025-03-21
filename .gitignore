@@ -1,3 +1,8 @@
 .idea/
 __pycache__/
-files/
+.venv
+models/bert/tokenizer
+models/bert/bert_model.pt
+models/lstm/lstm_model.h5
+files/dataset.csv
+files/data_splits.npz

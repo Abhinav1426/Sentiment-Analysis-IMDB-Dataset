@@ -1,5 +1,8 @@
 import pandas as pd
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
+import numpy as np
+
 
 class Data_Processer:
     def __init__(self, file_path):
@@ -36,4 +39,23 @@ class Data_Processer:
         tqdm.pandas(desc="Processing reviews")
         self.df['review'] = self.df['review'].progress_apply(text_processor.clean_text)
         print("Reviews preprocessed.")
+
+    def data_split_and_save(self):
+        X = self.df['review'].values
+        y = self.df['sentiment'].values
+
+        X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
+        np.savez('files/data_splits.npz', X_train=X_train, y_train=y_train,
+                 X_val=X_val, y_val=y_val,
+                 X_test=X_test, y_test=y_test)
+
+    @staticmethod
+    def data_loader():
+        data = np.load('files/data_splits.npz', allow_pickle=True)
+        X_train, y_train = data['X_train'], data['y_train']
+        X_val, y_val = data['X_val'], data['y_val']
+        X_test, y_test = data['X_test'], data['y_test']
+        return X_train, y_train , X_val, y_val , X_test, y_test
 

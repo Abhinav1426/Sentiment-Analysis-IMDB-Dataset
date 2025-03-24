@@ -6,3 +6,4 @@ models/bert/bert_model.pt
 models/lstm/lstm_model.h5
 files/dataset.csv
 files/data_splits.npz
+models/lstm/tokenizer.json

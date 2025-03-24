@@ -1,149 +1,64 @@
+# train_lstm.py
 import json
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-import torch
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-import torch.nn as nn
-import torch.optim as optim
-from tqdm import tqdm
 import os
 
-os.makedirs('models/lstm', exist_ok=True)
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Bidirectional
 
+os.makedirs('models/lstm', exist_ok=True)
+# Tokenization and padding
+MAX_NUM_WORDS = 25000
+MAX_SEQUENCE_LENGTH = 200
 class LSTM_Model:
     def __init__(self, load_data_fn):
         self.load_data_fn = load_data_fn
-        self.device = None
         self.tokenizer = None
-        self.model = None
-        self.optimizer = None
+        self.model=None
+
         print("Initialized LSTM model class")
 
-    def tokenize_data(self, texts, labels, max_length=128):
-        print(f"Tokenizing {len(texts)} texts")
-        input_ids = []
-        for text in tqdm(texts, desc="Tokenizing"):
-            tokens = text.split()
-            indices = [self.tokenizer.get(token, self.tokenizer.get('<UNK>', 0)) for token in tokens]
-            if len(indices) < max_length:
-                indices = indices + [self.tokenizer.get('<PAD>', 0)] * (max_length - len(indices))
-            else:
-                indices = indices[:max_length]
-            input_ids.append(torch.tensor(indices))
-        input_ids = torch.stack(input_ids)
-        labels = torch.tensor(labels)
-        print("Tokenization completed")
-        return input_ids, labels
+    def load_model(self):
+        # Build the LSTM model
+        print("Building LSTM model...")
+        embedding_dim = 128
+        vocab_size = min(MAX_NUM_WORDS, len(self.tokenizer.word_index) + 1)
 
-    def fine_tune_model(self, model, train_dataloader, val_dataloader, epochs=2):
-        print(f"Starting fine-tuning for {epochs} epochs")
-        best_val_accuracy = 0
-        criterion = nn.CrossEntropyLoss()
+        model = Sequential()
+        model.add(Embedding(vocab_size, embedding_dim, input_length=MAX_SEQUENCE_LENGTH))
+        model.add(Bidirectional(LSTM(64, return_sequences=True)))
+        model.add(Bidirectional(LSTM(32)))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(1, activation='sigmoid'))
 
-        for epoch in range(epochs):
-            print(f"Starting epoch {epoch + 1}/{epochs}")
-            model.train()
-            total_train_loss = 0
-
-            for batch in tqdm(train_dataloader, desc="Training"):
-                batch_input_ids = batch[0].to(self.device)
-                batch_labels = batch[1].to(self.device)
-
-                model.zero_grad()
-                outputs = model(batch_input_ids)
-                loss = criterion(outputs, batch_labels)
-                total_train_loss += loss.item()
-
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                self.optimizer.step()
-
-            avg_train_loss = total_train_loss / len(train_dataloader)
-            print(f"Average training loss: {avg_train_loss:.4f}")
-
-            model.eval()
-            val_predictions = []
-            val_true_labels = []
-
-            with torch.no_grad():
-                for batch in tqdm(val_dataloader, desc="Validation"):
-                    batch_input_ids = batch[0].to(self.device)
-                    batch_labels = batch[1].to(self.device)
-
-                    outputs = model(batch_input_ids)
-                    predictions = torch.argmax(outputs, dim=1)
-                    val_predictions.extend(predictions.cpu().numpy())
-                    val_true_labels.extend(batch_labels.cpu().numpy())
-
-            val_accuracy = accuracy_score(val_true_labels, val_predictions)
-            print(f"Validation Accuracy: {val_accuracy:.4f}")
-
-            if val_accuracy > best_val_accuracy:
-                best_val_accuracy = val_accuracy
-                torch.save(model.state_dict(), 'models/lstm/lstm_model.h5')
-                print(f"New best model saved with accuracy: {val_accuracy:.4f}")
-
-        return model
-
-    @staticmethod
-    def create_dataloader(inputs, labels, batch_size, is_train=False):
-        dataset = TensorDataset(inputs, labels)
-        sampler = RandomSampler(dataset) if is_train else SequentialSampler(dataset)
-        return DataLoader(
-            dataset,
-            sampler=sampler,
-            batch_size=batch_size,
-            pin_memory=True,
-            num_workers=2,
-            drop_last=is_train
-        )
-
-    def load_model(self, vocab_size, embedding_dim=128, hidden_dim=128, num_classes=2):
-        print("Loading LSTM model...")
-        class LSTMClassifier(nn.Module):
-            def __init__(self, vocab_size, embedding_dim, hidden_dim, num_classes):
-                super(LSTMClassifier, self).__init__()
-                self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
-                self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True)
-                self.fc = nn.Linear(hidden_dim, num_classes)
-
-            def forward(self, x):
-                embeds = self.embedding(x)
-                lstm_out, _ = self.lstm(embeds)
-                last_out = lstm_out[:, -1, :]
-                logits = self.fc(last_out)
-                return logits
-
-        vocab_size = len(self.tokenizer) if self.tokenizer else vocab_size
-        model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, num_classes)
+        # Compile the model
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model.summary()
         self.model = model
-        print("LSTM model loaded successfully")
-        return model
+    def tokenize_data(self,X_train):
+        print("Tokenizing text...")
+        tokenizer = Tokenizer(num_words=MAX_NUM_WORDS, oov_token='<OOV>')
+        tokenizer.fit_on_texts(X_train)
 
-    def evaluate(self, test_dataloader):
-        print("Starting model evaluation")
-        self.model.eval()
-        test_predictions = []
-        test_true_labels = []
-        with torch.no_grad():
-            for batch in tqdm(test_dataloader, desc="Testing"):
-                batch_input_ids = batch[0].to(self.device)
-                batch_labels = batch[1].to(self.device)
-
-                outputs = self.model(batch_input_ids)
-                predictions = torch.argmax(outputs, dim=1)
-                test_predictions.extend(predictions.cpu().numpy())
-                test_true_labels.extend(batch_labels.cpu().numpy())
-
-        print("Evaluation completed")
-        return test_predictions, test_true_labels
-
+        # Save the tokenizer
+        with open('models/lstm/tokenizer.json', 'w') as f:
+            f.write(tokenizer.to_json())
+        self.tokenizer = tokenizer
     @staticmethod
-    def calculate_metrics(test_predictions, test_true_labels):
-        print("Calculating metrics")
-        accuracy = accuracy_score(test_true_labels, test_predictions)
-        precision = precision_score(test_true_labels, test_predictions, average='binary')
-        recall = recall_score(test_true_labels, test_predictions, average='binary')
-        f1 = f1_score(test_true_labels, test_predictions, average='binary')
+    def calculate_metrics(y_test, y_pred):
+
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+
+        print(f"LSTM Test Accuracy: {accuracy:.4f}")
+        print(f"LSTM Test Precision: {precision:.4f}")
+        print(f"LSTM Test Recall: {recall:.4f}")
+        print(f"LSTM Test F1 Score: {f1:.4f}")
 
         metrics = {
             'accuracy': float(accuracy),
@@ -157,40 +72,42 @@ class LSTM_Model:
             json.dump(metrics, f)
 
     def train_model(self):
-        print("Starting LSTM model training")
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Using device: {self.device}")
+        # Load the data splits
+        print("Loading data splits...")
 
         X_train, y_train, X_val, y_val, X_test, y_test = self.load_data_fn()
-        print("Data splits loaded successfully")
+        self.tokenize_data(X_train)
+        # Convert text to sequences
+        X_train_seq = self.tokenizer.texts_to_sequences(X_train)
+        X_val_seq = self.tokenizer.texts_to_sequences(X_val)
+        X_test_seq = self.tokenizer.texts_to_sequences(X_test)
 
-        # Build a simple tokenizer (vocabulary) from training data
-        self.tokenizer = {'<PAD>': 0, '<UNK>': 1}
-        for text in X_train:
-            for token in text.split():
-                if token not in self.tokenizer:
-                    self.tokenizer[token] = len(self.tokenizer)
-        print("Tokenizer built")
+        # Pad sequences
+        X_train_pad = pad_sequences(X_train_seq, maxlen=MAX_SEQUENCE_LENGTH, padding='post', truncating='post')
+        X_val_pad = pad_sequences(X_val_seq, maxlen=MAX_SEQUENCE_LENGTH, padding='post', truncating='post')
+        X_test_pad = pad_sequences(X_test_seq, maxlen=MAX_SEQUENCE_LENGTH, padding='post', truncating='post')
 
-        train_inputs, train_labels = self.tokenize_data(X_train, y_train)
-        val_inputs, val_labels = self.tokenize_data(X_val, y_val)
-        test_inputs, test_labels = self.tokenize_data(X_test, y_test)
+        self.load_model()
 
-        batch_size = 16
-        train_dataloader = self.create_dataloader(train_inputs, train_labels, batch_size, is_train=True)
-        val_dataloader = self.create_dataloader(val_inputs, val_labels, batch_size)
-        test_dataloader = self.create_dataloader(test_inputs, test_labels, batch_size)
-        print("DataLoaders created successfully")
+        # Train the model
+        print("Training LSTM model...")
+        history = self.model.fit(
+            X_train_pad, y_train,
+            validation_data=(X_val_pad, y_val),
+            epochs=5,
+            batch_size=64,
+            verbose=1
+        )
 
-        vocab_size = len(self.tokenizer)
-        self.load_model(vocab_size)
-        self.model.to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        # Evaluate the model
+        print("Evaluating LSTM model...")
+        y_pred_proba = self.model.predict(X_test_pad)
+        y_pred = (y_pred_proba > 0.5).astype(int).flatten()
 
-        self.model = self.fine_tune_model(self.model, train_dataloader, val_dataloader, epochs=3)
-        self.model.load_state_dict(torch.load('models/lstm/lstm_model.h5'))
+        # Calculate metrics
+        self.calculate_metrics(y_test, y_pred)
 
-        test_predictions, test_true_labels = self.evaluate(test_dataloader)
-        self.calculate_metrics(test_predictions, test_true_labels)
+        # Save the model
+        self.model.save('models/lstm/lstm_model.h5')
 
-        print("Training completed successfully")
+        print("LSTM model and metrics saved to models/lstm/")

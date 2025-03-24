@@ -1,4 +1,3 @@
-# train_lstm.py
 import json
 import os
 

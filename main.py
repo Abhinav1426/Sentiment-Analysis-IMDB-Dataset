@@ -38,5 +38,7 @@ if __name__ == "__main__":
     lstm_model = LSTM_Model(processor.data_loader)
     lstm_model.train_model()
     data_visualizer.plot_metrics('lstm')
+    data_visualizer.compare_models()
+
 
 

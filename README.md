@@ -196,6 +196,9 @@ Metrics are saved in `models/lstm/metrics.json` and `models/bert/metrics.json`.
 
 ![LSTM Training Progress](files/lstm_metrics.png)
 
+### Compare Models Results
+![Compare Models Results](files/compair.png)
+
 ## Data Process and Training Logs
    ```Text
       Data loaded successfully!

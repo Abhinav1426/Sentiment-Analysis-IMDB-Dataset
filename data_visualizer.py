@@ -79,3 +79,71 @@ class Data_Visualizer:
         plt.ylim(0, 100)  # Set y-axis limit to 100%
 
         plt.show()
+    @staticmethod
+    def compare_models():
+        try:
+            # Read metrics from both JSON files
+            with open('models/bert/metrics.json', 'r') as f:
+                bert_metrics = json.load(f)
+            with open('models/lstm/metrics.json', 'r') as f:
+                lstm_metrics = json.load(f)
+
+            # Prepare data
+            metrics = ['Accuracy', 'Precision', 'Recall', 'F1 Score']
+
+            bert_values = [
+                bert_metrics['accuracy'] * 100,
+                bert_metrics['precision'] * 100,
+                bert_metrics['recall'] * 100,
+                bert_metrics['f1_score'] * 100
+            ]
+
+            lstm_values = [
+                lstm_metrics['accuracy'] * 100,
+                lstm_metrics['precision'] * 100,
+                lstm_metrics['recall'] * 100,
+                lstm_metrics['f1_score'] * 100
+            ]
+
+            # Repeat the first value to close the polygon
+            bert_values += [bert_values[0]]
+            lstm_values += [lstm_values[0]]
+            metrics += [metrics[0]]
+
+            # Compute angle for each metric
+            angles = [n / float(len(metrics) - 1) * 2 * np.pi for n in range(len(metrics))]
+
+            # Set up the plot
+            fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+
+            # Plot data
+            ax.plot(angles, bert_values, 'o-', linewidth=2, label='BERT', color='red')
+            ax.fill(angles, bert_values, alpha=0.25, color='red')
+
+            ax.plot(angles, lstm_values, 'o-', linewidth=2, label='LSTM', color='yellow')
+            ax.fill(angles, lstm_values, alpha=0.25, color='yellow')
+
+            # Add labels
+            ax.set_xticks(angles[:-1])
+            ax.set_xticklabels(metrics[:-1])
+
+            # Add value labels
+            for angle, bert_value, lstm_value in zip(angles[:-1], bert_values[:-1], lstm_values[:-1]):
+                ax.text(angle, bert_value + 1, f'{bert_value:.2f}%',
+                        ha='center', va='bottom')
+                ax.text(angle, lstm_value - 1, f'{lstm_value:.2f}%',
+                        ha='center', va='top')
+
+            # Set chart properties
+            ax.set_ylim(80, 90)
+            plt.title('BERT vs LSTM Model Performance Comparison')
+            plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+
+            plt.show()
+
+        except FileNotFoundError as e:
+            print(f"Error: Could not find metrics files. Make sure they exist in the correct path.\n{str(e)}")
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON format in metrics files.\n{str(e)}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")

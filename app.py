@@ -10,7 +10,7 @@ import json
 app = Flask(__name__)
 # Load LSTM model and tokenizer
 print("Loading LSTM model and tokenizer...")
-lstm_model = tf.keras.models.load_model('models/lstm/model.h5')
+lstm_model = tf.keras.models.load_model('models/lstm/lstm_model.h5')
 
 with open('models/lstm/tokenizer.json', 'r') as f:
     lstm_tokenizer = tokenizer_from_json(f.read())

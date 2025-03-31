@@ -1,6 +1,6 @@
 # Sentiment Analysis Project
 
-## Overview
+## Overview 
 A comprehensive sentiment analysis system that uses both LSTM and BERT models to analyze text sentiment. The project includes text preprocessing, model training, visualization, and a Flask API for predictions.
 
 ## Features
